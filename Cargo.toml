@@ -19,7 +19,7 @@ similar = { features = [ 'bytes' ], optional = true, version = '2.2.0' }
 ton_block = { git = 'https://github.com/tonlabs/ever-block.git', tag = '1.9.85' }
 ton_types = { git = 'https://github.com/tonlabs/ever-types.git', tag = '2.0.16' }
 zstd = { default-features = false, optional = true, version = '0.11' }
-p256 = "0.10.1"
+p256 = "0.13.2"
 
 [features]
 fift_check = []
