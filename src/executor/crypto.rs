@@ -25,7 +25,7 @@ use crate::{
     },
     types::{Exception, Status}
 };
-use ed25519::signature::{Verifier, Signature};
+use ed25519::signature::Verifier;
 use std::borrow::Cow;
 use ton_block::GlobalCapabilities;
 use ton_types::{BuilderData, error, GasConsumer, ExceptionCode, UInt256};
@@ -228,7 +228,7 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
         }
     };
     let signature = engine.cmd.var(1).as_slice()?.get_bytestring(0);
-    let signature = match Signature::from_bytes(&signature[..]) {
+    let signature = match Signature::try_from(&signature[..]) {
         Ok(signature) => signature,
         Err(err) => {
             #[allow(clippy::collapsible_else_if)]
