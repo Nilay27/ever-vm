@@ -16,8 +16,8 @@ num-traits = '0.2'
 rand = '0.7'
 diffy = { optional = true, version = '0.2.2' }
 similar = { features = [ 'bytes' ], optional = true, version = '2.2.0' }
-ton_block = { git = 'https://github.com/tonlabs/ever-block.git', tag = '1.9.85' }
-ton_types = { git = 'https://github.com/tonlabs/ever-types.git', tag = '2.0.16' }
+ton_block = { path = '../ever-block' }
+ton_types = { path = '../ever-types' }
 zstd = { default-features = false, optional = true, version = '0.11' }
 p256 = "0.10.1"
 
@@ -37,5 +37,11 @@ name = 'benchmarks'
 bench = false
 
 [profile]
+
+[patch.'https://github.com/tonlabs/ever-block.git']
+ton_block = { path = '../ever-block' }
+
+[patch.'https://github.com/tonlabs/ever-types.git']
+ton_types = { path = '../ever-types' }
 
 
