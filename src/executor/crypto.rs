@@ -240,7 +240,7 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
                     engine.cc.stack.push(boolean!(false));
                     return Ok(())        
                 } else {
-                    return err!(ExceptionCode::FatalError, "cannot load signature {}, error {}", err, signature_to_string(&signature[..]))
+                    return err!(ExceptionCode::FatalError, "Cannot load signature using from_der {}, error {}", err, signature_to_string(&signature[..]))
                 }
             }
         }
