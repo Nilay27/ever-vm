@@ -32,6 +32,7 @@ use ton_types::{BuilderData, error, GasConsumer, ExceptionCode, UInt256};
 use p256::ecdsa::{Signature, VerifyingKey, signature::Verifier as P256Verifier};
 use p256::EncodedPoint;
 use p256::elliptic_curve::sec1::FromEncodedPoint;
+use env_logger;
 
 
 const PUBLIC_KEY_BITS:  usize = PUBLIC_KEY_BYTES * 8;
@@ -87,6 +88,18 @@ pub(super) fn execute_sha256u(engine: &mut Engine) -> Status {
 enum DataForSignature {
     Hash(BuilderData),
     Slice(Vec<u8>)
+}
+
+enum P256PublicKeyData {
+    Slice(Vec<u8>),
+}
+
+impl AsRef<[u8]> for P256PublicKeyData {
+    fn as_ref(&self) -> &[u8] {
+        match self {
+            P256PublicKeyData::Slice(vec) => vec.as_slice(),
+        }
+    }
 }
 
 impl AsRef<[u8]> for DataForSignature {
@@ -170,14 +183,15 @@ pub(super) fn execute_chksignu(engine: &mut Engine) -> Status {
 }
 
 fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) -> Status {
+    env_logger::init();
     engine.load_instruction(Instruction::new(name))?;
     // print all the engine variables
     for i in 0..engine.cmd.var_count() {
-        println!("var[{}] = {:?}", i, engine.cmd.var(i));
+        log::info!("var[{}] = {:?}", i, engine.cmd.var(i));
     }
+    
     fetch_stack(engine, 3)?;
-    let pub_key = engine.cmd.var(0).as_integer()?
-        .as_builder::<UnsignedIntegerBigEndianEncoding>(PUBLIC_KEY_BITS)?;
+    let pub_key = P256PublicKeyData::Slice(engine.cmd.var(0).as_slice()?.get_bytestring(0));
     engine.cmd.var(1).as_slice()?;
     if hash {
         engine.cmd.var(2).as_integer()?;
@@ -196,7 +210,7 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
         }
         DataForSignature::Slice(engine.cmd.var(2).as_slice()?.get_bytestring(0))
     };
-    let encoded_point = match EncodedPoint::from_bytes(pub_key.data()) {
+    let encoded_point = match EncodedPoint::from_bytes(pub_key.as_ref()) {
         Ok(encoded_point) => encoded_point,
         Err(err) => if engine.check_capabilities(GlobalCapabilities::CapsTvmBugfixes2022 as u64) {
             engine.cc.stack.push(boolean!(false));

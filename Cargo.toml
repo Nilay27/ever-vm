@@ -21,6 +21,7 @@ ton_block = { git = 'https://github.com/tonlabs/ever-block.git', tag = '1.9.37' 
 ton_types = { git = 'https://github.com/tonlabs/ever-types.git', tag = '1.12.7' }
 zstd = { default-features = false, optional = true, version = '0.11' }
 p256 = "0.10.1"
+env_logger = "0.9"
 
 
 [features]
