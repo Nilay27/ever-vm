@@ -59,7 +59,7 @@ pub(super) fn execute_hashcu(engine: &mut Engine) -> Status {
 pub(super) fn execute_hashsu(engine: &mut Engine) -> Status {
     engine.load_instruction(Instruction::new("HASHSU"))?;
     fetch_stack(engine, 1)?;
-    let builder = engine.cmd.var(0).as_slice()?.as_builder();
+    let builder = BuilderData::from_slice(engine.cmd.var(0).as_slice()?);
     let cell = engine.finalize_cell(builder)?;
     let hash_int = hash_to_uint(cell.repr_hash());
     engine.cc.stack.push(StackItem::integer(hash_int));
@@ -132,32 +132,16 @@ fn check_signature(engine: &mut Engine, name: &'static str, hash: bool) -> Statu
         }
         DataForSignature::Slice(engine.cmd.var(2).as_slice()?.get_bytestring(0))
     };
-    let pub_key = match ed25519_dalek::PublicKey::from_bytes(pub_key.data()) {
-        Ok(pub_key) => pub_key,
-        Err(err) => if engine.check_capabilities(GlobalCapabilities::CapsTvmBugfixes2022 as u64) {
-                engine.cc.stack.push(boolean!(false));
-                return Ok(())
-            } else {
-                return err!(ExceptionCode::FatalError, "cannot load public key {}", err)
-            }
-    };
+    let pub_key = ed25519_dalek::PublicKey::from_bytes(pub_key.data())
+        .map_err(|err| exception!(ExceptionCode::FatalError, "cannot load public key {}", err))?;
     let signature = engine.cmd.var(1).as_slice()?.get_bytestring(0);
     let signature = match ed25519::signature::Signature::from_bytes(&signature[..SIGNATURE_BYTES]) {
         Ok(signature) => signature,
-        Err(err) => {
-            #[allow(clippy::collapsible_else_if)]
-            if engine.check_capabilities(GlobalCapabilities::CapsTvmBugfixes2022 as u64) {
-                engine.cc.stack.push(boolean!(false));
-                return Ok(())    
-            } else {
-                if hash {
-                    engine.cc.stack.push(boolean!(false));
-                    return Ok(())        
-                } else {
-                    return err!(ExceptionCode::FatalError, "cannot load signature {}", err)
-                }
-            }
+        Err(_) if hash && !engine.check_capabilities(GlobalCapabilities::CapsTvmBugfixes2022 as u64) => {
+            engine.cc.stack.push(boolean!(false));
+            return Ok(())
         }
+        Err(err ) => return err!(ExceptionCode::FatalError, "cannot load signature {}", err)
     };
     let data = preprocess_signed_data(engine, data.as_ref());
     #[cfg(feature = "signature_no_check")]
@@ -187,6 +171,10 @@ pub(super) fn execute_chksignu(engine: &mut Engine) -> Status {
 
 fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) -> Status {
     engine.load_instruction(Instruction::new(name))?;
+    // print all the engine variables
+    for i in 0..engine.cmd.var_count() {
+        println!("var[{}] = {:?}", i, engine.cmd.var(i));
+    }
     fetch_stack(engine, 3)?;
     let pub_key = engine.cmd.var(0).as_integer()?
         .as_builder::<UnsignedIntegerBigEndianEncoding>(PUBLIC_KEY_BITS)?;
