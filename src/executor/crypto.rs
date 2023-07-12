@@ -32,6 +32,7 @@ use ton_types::{BuilderData, error, GasConsumer, ExceptionCode, UInt256};
 use p256::ecdsa::{Signature, VerifyingKey, signature::Verifier as P256Verifier};
 use p256::EncodedPoint;
 use p256::elliptic_curve::sec1::FromEncodedPoint;
+use env_logger;
 
 
 const PUBLIC_KEY_BITS:  usize = PUBLIC_KEY_BYTES * 8;
@@ -170,11 +171,13 @@ pub(super) fn execute_chksignu(engine: &mut Engine) -> Status {
 }
 
 fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) -> Status {
+    env_logger::init();
     engine.load_instruction(Instruction::new(name))?;
     // print all the engine variables
     for i in 0..engine.cmd.var_count() {
-        println!("var[{}] = {:?}", i, engine.cmd.var(i));
+        log::info!("var[{}] = {:?}", i, engine.cmd.var(i));
     }
+    
     fetch_stack(engine, 3)?;
     let pub_key = engine.cmd.var(0).as_integer()?
         .as_builder::<UnsignedIntegerBigEndianEncoding>(PUBLIC_KEY_BITS)?;
