@@ -240,7 +240,7 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
                     engine.cc.stack.push(boolean!(false));
                     return Ok(())        
                 } else {
-                    return err!(ExceptionCode::FatalError, "cannot load signature {}", err)
+                    return err!(ExceptionCode::FatalError, "cannot load signature{}, error {}", err, signature_to_string(&signature[..]))
                 }
             }
         }
@@ -253,6 +253,10 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
     let result = pub_key.verify(&data, &signature).is_ok();
     engine.cc.stack.push(boolean!(result));
     Ok(())
+}
+
+pub(super) fn signature_to_string(signature: &[u8]) -> String {
+    hex::encode(signature)
 }
 
 pub(super) fn execute_p256_chksignu(engine: &mut Engine) -> Status {
