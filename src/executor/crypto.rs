@@ -171,6 +171,10 @@ pub(super) fn execute_chksignu(engine: &mut Engine) -> Status {
 
 fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) -> Status {
     engine.load_instruction(Instruction::new(name))?;
+    // print all the engine variables
+    for i in 0..engine.cmd.var_count() {
+        println!("var[{}] = {:?}", i, engine.cmd.var(i));
+    }
     fetch_stack(engine, 3)?;
     let pub_key = engine.cmd.var(0).as_integer()?
         .as_builder::<UnsignedIntegerBigEndianEncoding>(PUBLIC_KEY_BITS)?;
