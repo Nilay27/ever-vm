@@ -90,6 +90,18 @@ enum DataForSignature {
     Slice(Vec<u8>)
 }
 
+enum P256PublicKeyData {
+    Slice(Vec<u8>),
+}
+
+impl AsRef<[u8]> for P256PublicKeyData {
+    fn as_ref(&self) -> &[u8] {
+        match self {
+            P256PublicKeyData::Slice(vec) => vec.as_slice(),
+        }
+    }
+}
+
 impl AsRef<[u8]> for DataForSignature {
     fn as_ref(&self) -> &[u8] {
         match self {
@@ -179,8 +191,7 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
     }
     
     fetch_stack(engine, 3)?;
-    let pub_key = engine.cmd.var(0).as_integer()?
-        .as_builder::<UnsignedIntegerBigEndianEncoding>(PUBLIC_KEY_BITS)?;
+    let pub_key = P256PublicKeyData::Slice(engine.cmd.var(0).as_slice()?.get_bytestring(0));
     engine.cmd.var(1).as_slice()?;
     if hash {
         engine.cmd.var(2).as_integer()?;
@@ -199,7 +210,7 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
         }
         DataForSignature::Slice(engine.cmd.var(2).as_slice()?.get_bytestring(0))
     };
-    let encoded_point = match EncodedPoint::from_bytes(pub_key.data()) {
+    let encoded_point = match EncodedPoint::from_bytes(pub_key.as_ref()) {
         Ok(encoded_point) => encoded_point,
         Err(err) => if engine.check_capabilities(GlobalCapabilities::CapsTvmBugfixes2022 as u64) {
             engine.cc.stack.push(boolean!(false));
