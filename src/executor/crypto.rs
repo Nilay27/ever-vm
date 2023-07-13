@@ -190,7 +190,6 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
     
     fetch_stack(engine, 3)?;
     let pub_key = P256PublicKeyData::Slice(engine.cmd.var(0).as_slice()?.get_bytestring(0));
-    let pub_key1 = pub_key;
     engine.cmd.var(1).as_slice()?;
     if hash {
         engine.cmd.var(2).as_integer()?;
@@ -219,8 +218,8 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
         }
     };
 
-    let pub_key = match VerifyingKey::from_encoded_point(&encoded_point) {
-        Ok(pub_key) => pub_key,
+    let verify_key = match VerifyingKey::from_encoded_point(&encoded_point) {
+        Ok(verify_key) => verify_key,
         Err(err) => if engine.check_capabilities(GlobalCapabilities::CapsTvmBugfixes2022 as u64) {
             engine.cc.stack.push(boolean!(false));
             return Ok(())
@@ -243,7 +242,7 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
                     engine.cc.stack.push(boolean!(false));
                     return Ok(())        
                 } else {
-                    return err!(ExceptionCode::FatalError, "Fetched publicKey {}, signature {}, data {}", signature_to_string(pub_key1.as_ref()), signature_to_string(&signature[..]),
+                    return err!(ExceptionCode::FatalError, "Fetched publicKey {}, signature {}, data {}", signature_to_string(pub_key.as_ref()), signature_to_string(&signature[..]),
                 signature_to_string(data.as_ref()))
                 }
             }
@@ -252,9 +251,9 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
     let data = preprocess_signed_data(engine, data.as_ref());
     #[cfg(feature = "signature_no_check")]
     let result = 
-        engine.modifiers.chksig_always_succeed || pub_key.verify(&data, &signature).is_ok();
+        engine.modifiers.chksig_always_succeed || verify_key.verify(&data, &signature).is_ok();
     #[cfg(not(feature = "signature_no_check"))]
-    let result = pub_key.verify(&data, &signature).is_ok();
+    let result = verify_key.verify(&data, &signature).is_ok();
     engine.cc.stack.push(boolean!(result));
     Ok(())
 }
