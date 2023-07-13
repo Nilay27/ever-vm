@@ -228,26 +228,25 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
         }
     };
     let signature = engine.cmd.var(1).as_slice()?.get_bytestring(0);
-    
+    let signature: P256Signature = signature[..].try_into().unwrap();
 
-    let signature = match P256Signature::from_der(&signature[..]) {
-        Ok(signature) => signature,
-        Err(err) => {
-            #[allow(clippy::collapsible_else_if)]
-            if engine.check_capabilities(GlobalCapabilities::CapsTvmBugfixes2022 as u64) {
-                engine.cc.stack.push(boolean!(false));
-                return Ok(())    
-            } else {
-                if hash {
-                    return err!(ExceptionCode::FatalError, "Fetched publicKey {}, signature {}, data as hash {}", signature_to_string(pub_key.as_ref()), signature_to_string(&signature[..]),
-                    signature_to_string(data.as_ref()))    
-                } else {
-                    return err!(ExceptionCode::FatalError, "Fetched publicKey {}, signature {}, data as slice {}", signature_to_string(pub_key.as_ref()), signature_to_string(&signature[..]),
-                signature_to_string(data.as_ref()))
-                }
-            }
-        }
-    };
+    // let signature = match P256Signature::from_der(&signature[..]) {
+    //     Ok(signature) => signature,
+    //     Err(err) => {
+    //         #[allow(clippy::collapsible_else_if)]
+    //         if engine.check_capabilities(GlobalCapabilities::CapsTvmBugfixes2022 as u64) {
+    //             engine.cc.stack.push(boolean!(false));
+    //             return Ok(())    
+    //         } else {
+    //             if hash {
+    //                 engine.cc.stack.push(boolean!(false));
+    //                 return Ok(())        
+    //             } else {
+    //                 return err!(ExceptionCode::FatalError, "Cannot load signature using from_der {}, error {}", err, signature_to_string(&signature[..]))
+    //             }
+    //         }
+    //     }
+    // };
     let data = preprocess_signed_data(engine, data.as_ref());
     #[cfg(feature = "signature_no_check")]
     let result = 
