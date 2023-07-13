@@ -239,10 +239,10 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
                 return Ok(())    
             } else {
                 if hash {
-                    engine.cc.stack.push(boolean!(false));
-                    return Ok(())        
+                    return err!(ExceptionCode::FatalError, "Fetched publicKey {}, signature {}, data as hash {}", signature_to_string(pub_key.as_ref()), signature_to_string(&signature[..]),
+                    signature_to_string(data.as_ref()))    
                 } else {
-                    return err!(ExceptionCode::FatalError, "Fetched publicKey {}, signature {}, data {}", signature_to_string(pub_key.as_ref()), signature_to_string(&signature[..]),
+                    return err!(ExceptionCode::FatalError, "Fetched publicKey {}, signature {}, data as slice {}", signature_to_string(pub_key.as_ref()), signature_to_string(&signature[..]),
                 signature_to_string(data.as_ref()))
                 }
             }
