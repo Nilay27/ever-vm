@@ -29,9 +29,9 @@ use ed25519::signature::Verifier;
 use std::borrow::Cow;
 use ton_block::GlobalCapabilities;
 use ton_types::{BuilderData, error, GasConsumer, ExceptionCode, UInt256};
-use p256::ecdsa::{Signature, VerifyingKey, signature::Verifier as P256Verifier};
+use p256::ecdsa::{Signature as P256Signature, VerifyingKey, signature::Verifier as P256Verifier};
 use p256::EncodedPoint;
-use p256::elliptic_curve::sec1::FromEncodedPoint;
+use std::convert::TryInto;
 
 
 const PUBLIC_KEY_BITS:  usize = PUBLIC_KEY_BYTES * 8;
@@ -182,12 +182,7 @@ pub(super) fn execute_chksignu(engine: &mut Engine) -> Status {
 }
 
 fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) -> Status {
-    engine.load_instruction(Instruction::new(name))?;
-    // print all the engine variables
-    for i in 0..engine.cmd.var_count() {
-        log::info!("var[{}] = {:?}", i, engine.cmd.var(i));
-    }
-    
+    engine.load_instruction(Instruction::new(name))?;    
     fetch_stack(engine, 3)?;
     let pub_key = P256PublicKeyData::Slice(engine.cmd.var(0).as_slice()?.get_bytestring(0));
     engine.cmd.var(1).as_slice()?;
@@ -218,8 +213,8 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
         }
     };
 
-    let pub_key = match VerifyingKey::from_encoded_point(&encoded_point) {
-        Ok(pub_key) => pub_key,
+    let verify_key = match VerifyingKey::from_encoded_point(&encoded_point) {
+        Ok(verify_key) => verify_key,
         Err(err) => if engine.check_capabilities(GlobalCapabilities::CapsTvmBugfixes2022 as u64) {
             engine.cc.stack.push(boolean!(false));
             return Ok(())
@@ -228,31 +223,20 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
         }
     };
     let signature = engine.cmd.var(1).as_slice()?.get_bytestring(0);
-    let signature = match Signature::from_der(&signature[..]) {
-        Ok(signature) => signature,
-        Err(err) => {
-            #[allow(clippy::collapsible_else_if)]
-            if engine.check_capabilities(GlobalCapabilities::CapsTvmBugfixes2022 as u64) {
-                engine.cc.stack.push(boolean!(false));
-                return Ok(())    
-            } else {
-                if hash {
-                    engine.cc.stack.push(boolean!(false));
-                    return Ok(())        
-                } else {
-                    return err!(ExceptionCode::FatalError, "cannot load signature {}", err)
-                }
-            }
-        }
-    };
+    let signature: P256Signature = signature[..].try_into().unwrap();
+    
     let data = preprocess_signed_data(engine, data.as_ref());
     #[cfg(feature = "signature_no_check")]
     let result = 
-        engine.modifiers.chksig_always_succeed || pub_key.verify(&data, &signature).is_ok();
+        engine.modifiers.chksig_always_succeed || verify_key.verify(&data, &signature).is_ok();
     #[cfg(not(feature = "signature_no_check"))]
-    let result = pub_key.verify(&data, &signature).is_ok();
+    let result = verify_key.verify(&data, &signature).is_ok();
     engine.cc.stack.push(boolean!(result));
     Ok(())
+}
+
+pub(super) fn signature_to_string(signature: &[u8]) -> String {
+    hex::encode(signature)
 }
 
 pub(super) fn execute_p256_chksignu(engine: &mut Engine) -> Status {
