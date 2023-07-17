@@ -29,7 +29,7 @@ use ed25519::signature::Verifier;
 use std::borrow::Cow;
 use ton_block::GlobalCapabilities;
 use ton_types::{BuilderData, error, GasConsumer, ExceptionCode, UInt256};
-use p256::ecdsa::{Signature as P256Signature, VerifyingKey, signature::Verifier as P256Verifier, SigningKey};
+use p256::ecdsa::{Signature as P256Signature, VerifyingKey};
 use p256::EncodedPoint;
 use std::convert::TryInto;
 
@@ -233,10 +233,6 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
     let result = verify_key.verify(&data, &signature).is_ok();
     engine.cc.stack.push(boolean!(result));
     Ok(())
-}
-
-pub(super) fn signature_to_string(signature: &[u8]) -> String {
-    hex::encode(signature)
 }
 
 pub(super) fn execute_p256_chksignu(engine: &mut Engine) -> Status {
