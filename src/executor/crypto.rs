@@ -182,12 +182,7 @@ pub(super) fn execute_chksignu(engine: &mut Engine) -> Status {
 }
 
 fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) -> Status {
-    engine.load_instruction(Instruction::new(name))?;
-    // print all the engine variables
-    for i in 0..engine.cmd.var_count() {
-        log::info!("var[{}] = {:?}", i, engine.cmd.var(i));
-    }
-    
+    engine.load_instruction(Instruction::new(name))?;    
     fetch_stack(engine, 3)?;
     let pub_key = P256PublicKeyData::Slice(engine.cmd.var(0).as_slice()?.get_bytestring(0));
     engine.cmd.var(1).as_slice()?;
@@ -229,24 +224,7 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str,  hash: bool) ->
     };
     let signature = engine.cmd.var(1).as_slice()?.get_bytestring(0);
     let signature: P256Signature = signature[..].try_into().unwrap();
-
-    // let signature = match P256Signature::from_der(&signature[..]) {
-    //     Ok(signature) => signature,
-    //     Err(err) => {
-    //         #[allow(clippy::collapsible_else_if)]
-    //         if engine.check_capabilities(GlobalCapabilities::CapsTvmBugfixes2022 as u64) {
-    //             engine.cc.stack.push(boolean!(false));
-    //             return Ok(())    
-    //         } else {
-    //             if hash {
-    //                 engine.cc.stack.push(boolean!(false));
-    //                 return Ok(())        
-    //             } else {
-    //                 return err!(ExceptionCode::FatalError, "Cannot load signature using from_der {}, error {}", err, signature_to_string(&signature[..]))
-    //             }
-    //         }
-    //     }
-    // };
+    
     let data = preprocess_signed_data(engine, data.as_ref());
     #[cfg(feature = "signature_no_check")]
     let result = 
