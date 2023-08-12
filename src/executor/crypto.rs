@@ -321,9 +321,6 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str, hash: bool) -> 
     let result = engine.modifiers.chksig_always_succeed || signature.verify(&md, &pub_key).is_ok();
     #[cfg(not(feature = "signature_no_check"))]
     let result = signature.verify(&md, &pub_key).is_ok();
-    if result {
-        return err!(ExceptionCode::FatalError, "This is using OpenSSL");
-    }
     engine.cc.stack.push(boolean!(result));
     Ok(())
 }
