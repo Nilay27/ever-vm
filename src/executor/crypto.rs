@@ -301,7 +301,18 @@ fn check_p256_signature(engine: &mut Engine, name: &'static str, hash: bool) -> 
         DataForSignature::Slice(engine.cmd.var(2).as_slice()?.get_bytestring(0))
     };
     let signature_bytes = engine.cmd.var(1).as_slice()?.get_bytestring(0);
-    let signature = EcdsaSig::from_der(&signature_bytes).unwrap();
+    if signature_bytes.len() != 64 {
+        return err!(ExceptionCode::FatalError, "Invalid signature length");
+    }
+    
+    let r_bytes = &signature_bytes[0..32];
+    let s_bytes = &signature_bytes[32..64];
+    
+    let r = BigNum::from_slice(r_bytes).unwrap();
+    let s = BigNum::from_slice(s_bytes).unwrap();
+    
+    let signature = EcdsaSig::from_private_components(r, s).unwrap();
+
 
     let data = preprocess_signed_data(engine, data.as_ref());
     let md = openssl::hash::hash(MessageDigest::sha256(), &data).unwrap();
