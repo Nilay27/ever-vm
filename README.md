@@ -29,8 +29,7 @@ Rust complier v1.65+.
 ### Installing
 
 ```
-git clone --recurse-submodules https://github.com/tonlabs/ever-vm.git
-cd ever-vm
+git clone --recurse-submodules https://github.com/Nilay27/ever-vm.git
 cargo build --release
 ```
 
